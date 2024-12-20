@@ -5,12 +5,10 @@ using Microsoft.Data.Sqlite;
 
 namespace CurrencyConventer.Pages
 {
-    /// <summary>
-    /// Логика взаимодействия для LoginWindow.xaml
-    /// </summary>
     public partial class LoginWindow : Window
     {
-        private const string DbPath = "CurrencyConverter.db"; // Путь к базе данных
+        public static string DbPath { get; } = "CurrencyConverter.db"; // Путь к базе данных
+        public static string CurrentUser { get; private set; } // Текущий пользователь
 
         public LoginWindow()
         {
@@ -65,7 +63,12 @@ namespace CurrencyConventer.Pages
                     command.Parameters.AddWithValue("@Password", password);
 
                     var result = command.ExecuteScalar();
-                    return Convert.ToInt32(result) > 0;
+                    if (Convert.ToInt32(result) > 0)
+                    {
+                        CurrentUser = username; // Сохранение имени текущего пользователя
+                        return true;
+                    }
+                    return false;
                 }
             }
         }

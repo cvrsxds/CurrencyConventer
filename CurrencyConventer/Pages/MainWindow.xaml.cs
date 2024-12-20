@@ -1,20 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
-using System.Xml.Linq;
-using System.Globalization;
+using Microsoft.Data.Sqlite;
 
 namespace CurrencyConventer.Pages
 {
@@ -39,13 +32,12 @@ namespace CurrencyConventer.Pages
                 string xmlData = await client.GetStringAsync(url);
 
                 // Использование XDocument для парсинга XML
-                XDocument doc = XDocument.Parse(xmlData);
+                var doc = System.Xml.Linq.XDocument.Parse(xmlData);
                 var currencies = from c in doc.Descendants("Valute")
                                  select new
                                  {
                                      CharCode = c.Element("CharCode")?.Value,
                                      Nominal = c.Element("Nominal")?.Value,
-                                     Name = c.Element("Name")?.Value,
                                      Value = c.Element("Value")?.Value
                                  };
 
@@ -57,20 +49,6 @@ namespace CurrencyConventer.Pages
                     );
                 }
 
-                // Регулярное выражение для извлечения данных о валютах (по желанию, если необходимо использовать regex)
-                string pattern = @"<CharCode>(.*?)</CharCode><Nominal>(.*?)</Nominal><Name>(.*?)</Name><Value>(.*?)</Value>";
-                Regex regex = new(pattern);
-
-                foreach (Match match in regex.Matches(xmlData))
-                {
-                    string charCode = match.Groups[1].Value;
-                    double nominal = double.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture);
-                    double value = double.Parse(match.Groups[4].Value.Replace(',', '.'), CultureInfo.InvariantCulture);
-
-                    _currencyRates[charCode] = (nominal, value);
-                }
-
-                // Обновляем выпадающие списки валют
                 FromCurrencyComboBox.ItemsSource = _currencyRates.Keys;
                 ToCurrencyComboBox.ItemsSource = _currencyRates.Keys;
             }
@@ -106,6 +84,9 @@ namespace CurrencyConventer.Pages
                 // Конвертируем сумму
                 double convertedAmount = (amount * fromRate.Value / fromRate.Nominal) / (toRate.Value / toRate.Nominal);
                 OutputAmountTextBox.Text = convertedAmount.ToString("F2", CultureInfo.InvariantCulture);
+
+                // Сохраняем конвертацию в базу данных
+                SaveConversion(LoginWindow.CurrentUser, fromCurrency, toCurrency, amount, convertedAmount);
             }
             catch (Exception ex)
             {
@@ -113,9 +94,43 @@ namespace CurrencyConventer.Pages
             }
         }
 
+        private void SaveConversion(string username, string fromCurrency, string toCurrency, double amount, double convertedAmount)
+        {
+            string connectionString = $"Data Source={LoginWindow.DbPath}";
+
+            using (var connection = new SqliteConnection(connectionString))
+            {
+                connection.Open();
+
+                string getUserIdQuery = "SELECT Id FROM Users WHERE Username = @Username";
+                using (var getUserIdCommand = new SqliteCommand(getUserIdQuery, connection))
+                {
+                    getUserIdCommand.Parameters.AddWithValue("@Username", username);
+                    int userId = Convert.ToInt32(getUserIdCommand.ExecuteScalar());
+
+                    string insertQuery = @"
+                        INSERT INTO Conversions (UserId, FromCurrency, ToCurrency, Amount, ConvertedAmount, ConversionDate)
+                        VALUES (@UserId, @FromCurrency, @ToCurrency, @Amount, @ConvertedAmount, @ConversionDate)";
+                    using (var insertCommand = new SqliteCommand(insertQuery, connection))
+                    {
+                        insertCommand.Parameters.AddWithValue("@UserId", userId);
+                        insertCommand.Parameters.AddWithValue("@FromCurrency", fromCurrency);
+                        insertCommand.Parameters.AddWithValue("@ToCurrency", toCurrency);
+                        insertCommand.Parameters.AddWithValue("@Amount", amount);
+                        insertCommand.Parameters.AddWithValue("@ConvertedAmount", convertedAmount);
+                        insertCommand.Parameters.AddWithValue("@ConversionDate", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+
+                        insertCommand.ExecuteNonQuery();
+                    }
+                }
+            }
+        }
+
         private void HistoryButton_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("История конверсий пока не реализована.", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
+            var historywindow = new HistoryWindow();
+            historywindow.Show();
+            this.Close();
         }
     }
 }

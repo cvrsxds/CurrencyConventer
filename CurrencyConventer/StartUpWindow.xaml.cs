@@ -1,6 +1,7 @@
 ﻿using System.Windows;
+using CurrencyConventer.Pages;
 
-namespace CurrencyConventer.Pages
+namespace CurrencyConventer
 {
     public partial class StartUpWindow : Window
     {
