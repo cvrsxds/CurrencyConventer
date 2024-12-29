@@ -132,5 +132,12 @@ namespace CurrencyConventer.Pages
             historywindow.Show();
             this.Close();
         }
+
+        private void Exit_Button_Click(object sender, RoutedEventArgs e)
+        {
+            var starupwindow = new StartUpWindow();
+            starupwindow.Show();
+            this.Close();
+        }
     }
 }

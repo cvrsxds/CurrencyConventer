@@ -39,8 +39,8 @@
 
         <!-- Кнопки -->
         <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,45,0,10">
-            <Button Content="Назад" Width="100" Height="30" Margin="5" Click="BackButton_Click"/>
             <Button Content="Зарегестрироваться" Width="130" Height="30" Margin="5" Click="RegisterButton_Click"/>
+            <Button Content="Назад" Width="100" Height="30" Margin="5" Click="BackButton_Click"/>
         </StackPanel>
     </Grid>
 </Window>

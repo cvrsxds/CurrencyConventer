@@ -37,7 +37,7 @@
                 <!-- Add more currencies as needed -->
             </ComboBox>
 
-            <TextBlock Text="to" 
+            <TextBlock Text="В" 
                        VerticalAlignment="Center" 
                        Margin="0,0,10,0" />
 
@@ -73,6 +73,12 @@
                     Height="50"
                     Width="141"
                     Margin="20" />
+            <Button x:Name="Exit_Button"
+                    Content="Выход" 
+                    Width="141"
+                    Height="50"
+                    Margin="20"
+                    Click="Exit_Button_Click"/>
         </StackPanel>
     </Grid>
 </Window>
