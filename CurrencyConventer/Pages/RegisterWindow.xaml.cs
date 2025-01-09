@@ -1,8 +1,10 @@
 ﻿using CurrencyConventer.Pages;
 using Microsoft.Data.Sqlite;
 using System;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using System.Security.Cryptography;
 
 namespace CurrencyConventer.Pages
 {
@@ -19,7 +21,6 @@ namespace CurrencyConventer.Pages
             string password = PasswordBox.Password;
             string confirmPassword = ConfirmPasswordBox.Password;
 
-            // Проверка полей
             if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
             {
                 MessageBox.Show("Все поля обязательны.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -52,23 +53,14 @@ namespace CurrencyConventer.Pages
             }
         }
 
-        private void BackButton_Click(object sender, RoutedEventArgs e)
-        {
-            var startupWindow = new StartUpWindow();
-            startupWindow.Show();
-            this.Close();
-        }
-
         private bool RegisterUser(string username, string password)
         {
-            // Путь к базе данных
             string dbPath = "CurrencyConverter.db";
 
             using (var connection = new SqliteConnection($"Data Source={dbPath}"))
             {
                 connection.Open();
 
-                // Проверка на уникальность имени пользователя
                 var checkCommand = new SqliteCommand("SELECT COUNT(*) FROM Users WHERE Username = @username", connection);
                 checkCommand.Parameters.AddWithValue("@username", username);
 
@@ -78,14 +70,36 @@ namespace CurrencyConventer.Pages
                     return false;
                 }
 
+                string hashedPassword = HashPassword(password);
                 var insertCommand = new SqliteCommand("INSERT INTO Users (Username, Password) VALUES (@username, @password)", connection);
                 insertCommand.Parameters.AddWithValue("@username", username);
-                insertCommand.Parameters.AddWithValue("@password", password);
+                insertCommand.Parameters.AddWithValue("@password", hashedPassword);
 
                 insertCommand.ExecuteNonQuery();
             }
 
             return true;
+        }
+
+        private static string HashPassword(string password)
+        {
+            using (SHA256 sha256 = SHA256.Create())
+            {
+                byte[] bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
+                StringBuilder builder = new StringBuilder();
+                foreach (byte b in bytes)
+                {
+                    builder.Append(b.ToString("x2"));
+                }
+                return builder.ToString();
+            }
+        }
+
+        private void BackButton_Click(object sender, RoutedEventArgs e)
+        {
+            var startupWindow = new StartUpWindow();
+            startupWindow.Show();
+            this.Close();
         }
     }
 }

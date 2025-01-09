@@ -1,21 +1,22 @@
 ﻿using System;
 using System.Data;
+using System.Text;
 using System.Windows;
 using Microsoft.Data.Sqlite;
+using System.Security.Cryptography;
 
 namespace CurrencyConventer.Pages
 {
     public partial class LoginWindow : Window
     {
-        public static string DbPath { get; } = "CurrencyConverter.db"; // Путь к базе данных
-        public static string CurrentUser { get; private set; } // Текущий пользователь
+        public static string DbPath { get; } = "CurrencyConverter.db";
+        public static string CurrentUser { get; private set; }
 
         public LoginWindow()
         {
             InitializeComponent();
         }
 
-        // Обработка нажатия на кнопку "Войти"
         private void LoginButton_Click(object sender, RoutedEventArgs e)
         {
             string username = UsernameTextBox.Text;
@@ -47,7 +48,6 @@ namespace CurrencyConventer.Pages
             }
         }
 
-        // Метод проверки учетных данных
         private bool AuthenticateUser(string username, string password)
         {
             string connectionString = $"Data Source={DbPath}";
@@ -56,20 +56,33 @@ namespace CurrencyConventer.Pages
             {
                 connection.Open();
 
-                string query = "SELECT COUNT(1) FROM Users WHERE Username = @Username AND Password = @Password";
+                string query = "SELECT Password FROM Users WHERE Username = @Username";
                 using (var command = new SqliteCommand(query, connection))
                 {
                     command.Parameters.AddWithValue("@Username", username);
-                    command.Parameters.AddWithValue("@Password", password);
+                    var storedHash = command.ExecuteScalar()?.ToString();
 
-                    var result = command.ExecuteScalar();
-                    if (Convert.ToInt32(result) > 0)
+                    if (storedHash != null && storedHash == HashPassword(password))
                     {
-                        CurrentUser = username; // Сохранение имени текущего пользователя
+                        CurrentUser = username;
                         return true;
                     }
                     return false;
                 }
+            }
+        }
+
+        private static string HashPassword(string password)
+        {
+            using (SHA256 sha256 = SHA256.Create())
+            {
+                byte[] bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
+                StringBuilder builder = new StringBuilder();
+                foreach (byte b in bytes)
+                {
+                    builder.Append(b.ToString("x2"));
+                }
+                return builder.ToString();
             }
         }
 
