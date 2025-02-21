@@ -14,7 +14,7 @@
             <!-- Нижние кнопки -->
         </Grid.RowDefinitions>
 
-        <TextBlock Text="Добро пожаловать                         в Currency Conventer"
+        <TextBlock Text="Добро пожаловать в Currency Conventer"
                    TextWrapping="Wrap"
                    FontSize="24"
                    FontWeight="Bold"
